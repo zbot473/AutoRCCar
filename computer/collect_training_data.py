@@ -18,7 +18,8 @@ class CollectTrainingData(object):
         self.server_socket.listen(0)
 
         # accept a single connection
-        self.connection = self.server_socket.accept()[0].makefile('rb')
+        self.accepted = self.server_socket.accept()
+        self.connection = self.accepted[0].makefile('rb')
 
         # connect to a seral port
         self.send_inst = True

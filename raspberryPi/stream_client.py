@@ -21,6 +21,8 @@ try:
         
         # send jpeg format video stream
         for foo in camera.capture_continuous(stream, 'jpeg', use_video_port = True):
+            data = client_socket.recv(1024)
+            print(data)
             connection.write(struct.pack('<L', stream.tell()))
             connection.flush()
             stream.seek(0)
