@@ -1,0 +1,5 @@
+.DS_Store
+saved_model
+training_data
+*.pyc
+*.swp

@@ -2,7 +2,6 @@ __author__ = 'zhengwang'
 
 import numpy as np
 import cv2
-import serial
 import pygame
 from pygame.locals import *
 import socket
@@ -12,17 +11,16 @@ import os
 
 class CollectTrainingData(object):
     
-    def __init__(self, host, port, serial_port, input_size):
+    def __init__(self, host, port,  _port, input_size):
 
         self.server_socket = socket.socket()
         self.server_socket.bind((host, port))
         self.server_socket.listen(0)
-
         # accept a single connection
-        self.connection = self.server_socket.accept()[0].makefile('rb')
+        self.accepted = self.server_socket.accept()[0]
+        self.connection = self.accepted.makefile('rb')
 
         # connect to a seral port
-        self.ser = serial.Serial(serial_port, 115200, timeout=1)
         self.send_inst = True
 
         self.input_size = input_size
@@ -73,70 +71,66 @@ class CollectTrainingData(object):
                     
                     frame += 1
                     total_frame += 1
+                    key_input = pygame.key.get_pressed()
+
+                            # complex orders
+                    if key_input[pygame.K_UP] and key_input[pygame.K_RIGHT]:
+                        print("Forward Right")
+                        X = np.vstack((X, temp_array))
+                        y = np.vstack((y, self.k[1]))
+                        saved_frame += 1
+                        self.accepted.send(chr(6).encode())
+
+                    elif key_input[pygame.K_UP] and key_input[pygame.K_LEFT]:
+                        print("Forward Left")
+                        X = np.vstack((X, temp_array))
+                        y = np.vstack((y, self.k[0]))
+                        saved_frame += 1
+                        self.accepted.send(chr(7).encode())
+
+                    elif key_input[pygame.K_DOWN] and key_input[pygame.K_RIGHT]:
+                        print("Reverse Right")
+                        self.accepted.send(chr(8).encode())
+
+                    elif key_input[pygame.K_DOWN] and key_input[pygame.K_LEFT]:
+                        print("Reverse Left")
+                        self.accepted.send(chr(9).encode())
+
+                    # simple orders
+                    elif key_input[pygame.K_UP]:
+                        print("Forward")
+                        saved_frame += 1
+                        X = np.vstack((X, temp_array))
+                        y = np.vstack((y, self.k[2]))
+                        self.accepted.send(chr(1).encode())
+
+                    elif key_input[pygame.K_DOWN]:
+                        print("Reverse")
+                        self.accepted.send(chr(2).encode())
+
+                    elif key_input[pygame.K_RIGHT]:
+                        print("Right")
+                        X = np.vstack((X, temp_array))
+                        y = np.vstack((y, self.k[1]))
+                        saved_frame += 1
+                        self.accepted.send(chr(3).encode())
+
+                    elif key_input[pygame.K_LEFT]:
+                        print("Left")
+                        X = np.vstack((X, temp_array))
+                        y = np.vstack((y, self.k[0]))
+                        saved_frame += 1
+                        self.accepted.send(chr(4).encode())
+
+                    elif key_input[pygame.K_x] or key_input[pygame.K_q]:
+                        print("exit")
+                        self.send_inst = False
+                        self.accepted.send(chr(0).encode())
+                        break
 
                     # get input from human driver
                     for event in pygame.event.get():
-                        if event.type == KEYDOWN:
-                            key_input = pygame.key.get_pressed()
-
-                            # complex orders
-                            if key_input[pygame.K_UP] and key_input[pygame.K_RIGHT]:
-                                print("Forward Right")
-                                X = np.vstack((X, temp_array))
-                                y = np.vstack((y, self.k[1]))
-                                saved_frame += 1
-                                self.ser.write(chr(6).encode())
-
-                            elif key_input[pygame.K_UP] and key_input[pygame.K_LEFT]:
-                                print("Forward Left")
-                                X = np.vstack((X, temp_array))
-                                y = np.vstack((y, self.k[0]))
-                                saved_frame += 1
-                                self.ser.write(chr(7).encode())
-
-                            elif key_input[pygame.K_DOWN] and key_input[pygame.K_RIGHT]:
-                                print("Reverse Right")
-                                self.ser.write(chr(8).encode())
-
-                            elif key_input[pygame.K_DOWN] and key_input[pygame.K_LEFT]:
-                                print("Reverse Left")
-                                self.ser.write(chr(9).encode())
-
-                            # simple orders
-                            elif key_input[pygame.K_UP]:
-                                print("Forward")
-                                saved_frame += 1
-                                X = np.vstack((X, temp_array))
-                                y = np.vstack((y, self.k[2]))
-                                self.ser.write(chr(1).encode())
-
-                            elif key_input[pygame.K_DOWN]:
-                                print("Reverse")
-                                self.ser.write(chr(2).encode())
-
-                            elif key_input[pygame.K_RIGHT]:
-                                print("Right")
-                                X = np.vstack((X, temp_array))
-                                y = np.vstack((y, self.k[1]))
-                                saved_frame += 1
-                                self.ser.write(chr(3).encode())
-
-                            elif key_input[pygame.K_LEFT]:
-                                print("Left")
-                                X = np.vstack((X, temp_array))
-                                y = np.vstack((y, self.k[0]))
-                                saved_frame += 1
-                                self.ser.write(chr(4).encode())
-
-                            elif key_input[pygame.K_x] or key_input[pygame.K_q]:
-                                print("exit")
-                                self.send_inst = False
-                                self.ser.write(chr(0).encode())
-                                self.ser.close()
-                                break
-
-                        elif event.type == pygame.KEYUP:
-                            self.ser.write(chr(0).encode())
+                        pass
 
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
@@ -168,13 +162,11 @@ class CollectTrainingData(object):
 
 if __name__ == '__main__':
     # host, port
-    h, p = "192.168.1.100", 8000
+    h, p = "", 8000
 
-    # serial port
-    sp = "/dev/tty.usbmodem1421"
 
     # vector size, half of the image
     s = 120 * 320
 
-    ctd = CollectTrainingData(h, p, sp, s)
+    ctd = CollectTrainingData(h, p, s)
     ctd.collect()
