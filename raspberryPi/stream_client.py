@@ -7,7 +7,7 @@ import picamera
 
 # create socket and bind host
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(('192.168.1.100', 8000))
+client_socket.connect(('192.168.1.177', 8000))
 connection = client_socket.makefile('wb')
 
 try:
@@ -20,6 +20,8 @@ try:
         
         # send jpeg format video stream
         for foo in camera.capture_continuous(stream, 'jpeg', use_video_port = True):
+            data = client_socket.recv(1024)
+            print(data)
             connection.write(struct.pack('<L', stream.tell()))
             connection.flush()
             stream.seek(0)

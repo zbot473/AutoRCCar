@@ -164,7 +164,6 @@ if __name__ == '__main__':
     # host, port
     h, p = "", 8000
 
-
     # vector size, half of the image
     s = 120 * 320
 
